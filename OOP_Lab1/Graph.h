@@ -1,9 +1,9 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include <iostream>
+#include <map>
 #include <vector>
-#include <string>
+#include <algorithm>
 using namespace std;
 
 class Vertex {
@@ -23,19 +23,30 @@ protected:
 public:
     Edge(int f, int t) : from(f), to(t) {}
     virtual ~Edge() {}
-    virtual void print() const = 0;
     int getFrom() const { return from; }
     int getTo() const { return to; }
+    virtual void print() const = 0;
 };
 
 class Graph {
+protected:
+    map<int, Vertex*> vertices;
+    vector<Edge*> edges;
 public:
-    virtual ~Graph() {}
-    virtual void addVertex(Vertex* v) = 0;
-    virtual void addEdge(Edge* e) = 0;
-    virtual void removeVertex(int id) = 0;
-    virtual void removeEdge(int from, int to) = 0;
-    virtual void print() const = 0;
+    
+    virtual ~Graph(); 
+
+    virtual void addVertex(Vertex* v);
+    virtual void addEdge(Edge* e);
+    virtual void removeVertex(int id);
+    virtual void removeEdge(int from, int to);
+
+    virtual Vertex* getVertex(int id) const;
+    virtual vector<int> getNeighbors(int id) const;
+    virtual vector<Vertex*> getAllVertices() const;
+    virtual vector<Edge*> getAllEdges() const;
+
+    virtual void print() const;
 };
 #endif // GRAPH_H
  

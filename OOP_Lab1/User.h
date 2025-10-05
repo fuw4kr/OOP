@@ -2,13 +2,14 @@
 #define USER_H
 
 #include "Graph.h"
+#include <string>
 #include <ctime>
 
 class User : public Vertex {
 private:
     string name;
     string email;
-    string bio;
+    string biography;
     string location;
     string phone;
     string birthday;
@@ -21,7 +22,7 @@ private:
     int messagesSent;
     int messagesReceived;
 public:
-    User(int id, string n, string e);
+    User(int id, const string n, const string e);
 
     void updateBio(const string& b);
     void setBirthday(const string& bday);
@@ -29,6 +30,7 @@ public:
     void setGender(const string& g);
     void updateLocation(const string& loc);
     string getLocation() const { return location; }
+    
     void addFollower();
     void addFollowing();
     void addPost();
@@ -36,18 +38,22 @@ public:
     void receiveMessage();
     void changeReputation(int delta);
 
+
+    string getName() const { return name; }
+    string getEmail() const { return email; }
+    string getBio() const { return biography; }
     void print() const override;
 };
 
 class Friendship : public Edge {
 public:
-    Friendship(int f, int t) : Edge(f, t) {}
+    Friendship(int f, int t); 
     void print() const override;
 };
 
 class Subscription : public Edge {
 public:
-    Subscription(int f, int t) : Edge(f, t) {}
+    Subscription(int f, int t); 
     void print() const override;
 };
 
@@ -56,6 +62,7 @@ class Message : public Edge {
 public:
     Message(int f, int t, string msg);
     void print() const override;
+    const string& getText() const { return text; }
 };
 
 class Post : public Edge {
@@ -63,6 +70,7 @@ class Post : public Edge {
 public:
     Post(int f, string c);
     void print() const override;
+    const string& getContent() const { return content; }
 };
 
 #endif // USER_H

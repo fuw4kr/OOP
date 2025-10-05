@@ -3,37 +3,39 @@
 
 #include "Graph.h"
 #include "User.h"
-#include "BFS.h"
-#include <map>
+#include "GraphAlgorithms.h"
 #include <vector>
-#include <set>
+#include <string>
+#include <map>
 using namespace std;
 
-class SocialNetwork : public Graph, public BFS {
-private:
-    map<int, Vertex*> users;
-    multimap<int, Edge*> edges;
-
-    vector<pair<int, int>> getEdgePairs() const;
-
+class SocialNetwork : public Graph, public GraphAlgorithms {
 public:
-    ~SocialNetwork();
+   
+    void addUser(User* user);
+    void removeUser(int userId);
+    User* getUser(int userId) const;
 
-    void addVertex(Vertex* v) override;
-    void addEdge(Edge* e) override;
-    void removeVertex(int id) override;
-    void removeEdge(int from, int to) override;
-    Vertex* findUser(int id) const;
-    void print() const override;
+    void addFriendship(int userA, int userB);
+    void removeFriendship(int userA, int userB);
 
-    bool isConnected();
-    int distance(int from, int to);
+    void addSubscription(int followerId, int followeeId);
+    void sendMessage(int senderId, int receiverId, const string& text);
+    void addPost(int authorId, const string& content);
 
+    vector<User*> getFriendsOfUser(int userId);
+    vector<User*> findMutualFriends(int userA, int userB);
+    vector<User*> findCloseFriends(int userId);
+    vector<User*> findUsersByLocation(const string& location);
+    vector<User*> findCommonSubscriptions(int userA, int userB);
 
-    vector<User*> findCommonFriends(User* a, User* b);
-    vector<User*> findCloseFriends(User* user);
-    vector<User*> findCommonSubscriptions(User* a, User* b);
-    vector<User*> findUsersWithSameLocation(const  string& location);
+    bool areConnected(int userA, int userB);
+    int distanceBetween(int userA, int userB);
+    map<int, int> shortestPathsFrom(int startId);
+    map<int, double> userCentrality();
+    vector<vector<int>> detectFriendGroups();
+
+    void printNetwork() const;
 };
 
 #endif // SOCIALNETWORK_H
