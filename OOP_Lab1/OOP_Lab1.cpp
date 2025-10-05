@@ -10,7 +10,8 @@ int main() {
             << "\n6. Show info\n7. Update bio\n8. Set birthday\n9. Set phone\n10. Set gender"
             << "\n11. Update location\n12. Add follower\n13. Add following\n14. Change reputation\n15. Find common friends"
             << "\n16. Find close friends\n17. Find common subscriptions\n18. Find users nearby (same location)"
-            << "\n19.Recommend users you may know\n20.Show most central users\n21.Check friendship cycles"
+            << "\n19. Recommend users you may know\n20. Show most central users\n21. Check friendship cycles"
+            << "\n22. Update last login time\n23. Generate random users"
             << "\n0. Exit\nChoice: ";
 
         cin >> choice;
@@ -214,9 +215,31 @@ int main() {
             break;
         }
 
-        default:
+        case 22: {
+            int id;
+            cout << "User ID: "; cin >> id;
+            User* user = net.getUser(id);
+            if (user) {
+                char buffer[26];
+                time_t lastLogin = user->getLastLogin();
+                ctime_s(buffer, sizeof(buffer), &lastLogin);
+                cout << "Last login: " << buffer;
+            }
+            else {
+                cout << "User not found.\n";
+            }
+            break;
+            }
+
+        case 23: {
+            int count;
+            cout << "How many random users generate? ";
+            cin >> count;
+            net.generateRandomUsers(count);
+            net.printNetwork();
             break;
         }
+      }
     } while (choice != 0);
 
     return 0;

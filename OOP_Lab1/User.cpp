@@ -21,6 +21,15 @@ void User::sendMessage() { ++messagesSent; }
 void User::receiveMessage() { ++messagesReceived; }
 void User::changeReputation(int delta) { reputation += delta; }
 
+
+void User::updateLastLogin() {
+    lastLogin = time(nullptr);
+}
+
+time_t User::getLastLogin() const {
+    return lastLogin;
+}
+
 void User::print() const {
     cout << "User ID=" << id
         << ", Name=" << name

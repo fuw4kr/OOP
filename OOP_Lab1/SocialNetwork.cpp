@@ -1,6 +1,8 @@
 #include "SocialNetwork.h"
 #include <iostream>
 #include <set>
+#include <cstdlib>    
+#include <ctime>
 using namespace std;
 
 void SocialNetwork::addUser(User* user) {
@@ -127,12 +129,44 @@ vector<vector<int>> SocialNetwork::detectFriendGroups() {
     return GraphAlgorithms::findTriangles();
 }
 
+void SocialNetwork::generateRandomUsers(int n) {
+    srand(static_cast<unsigned>(time(0)));
+
+    vector<string> names = {
+        "Alice", "Bob", "Sophia", "Diana", "Eve", "James", "Mia",
+        "Robert", "Ivan", "Judy", "Kevin", "Allison", "Liza", "Nina", "Gregory"
+    };
+
+    vector<string> locations = {
+        "Kyiv", "Lviv", "Odesa", "Kharkiv", "Dnipro", "Vinnytsia", "Poltava"
+    };
+
+    for (int i = 0; i < n; ++i) {
+        string name = names[rand() % names.size()] + to_string(i + 1);
+        string email = name + "@mail.com";
+        User* u = new User(i, name, email);
+        u->updateLocation(locations[rand() % locations.size()]);
+        u->setGender((rand() % 2 == 0) ? "Male" : "Female");
+        u->setBirthday("199" + to_string(rand() % 10) + "-0" + to_string(rand() % 9 + 1) + "-1" + to_string(rand() % 9));
+        addVertex(u);
+    }
+
+    for (int i = 0; i < n * 1.5; ++i) {
+        int u1 = rand() % n;
+        int u2 = rand() % n;
+        if (u1 != u2)
+            addEdge(new Friendship(u1, u2));
+    }
+
+    cout << "+ " << n << " random users created." << endl;
+}
+
 void SocialNetwork::printNetwork() const {
-    cout << "=== USERS ===" << endl;
+    cout << "USERS" << endl;
     for (auto* v : getAllVertices()) {
         v->print();
     }
-    cout << "=== FRIENDSHIPS ===" << endl;
+    cout << "FRIENDSHIPS" << endl;
     for (auto* e : getAllEdges()) {
         e->print();
     }

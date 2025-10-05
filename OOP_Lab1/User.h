@@ -38,10 +38,14 @@ public:
     void receiveMessage();
     void changeReputation(int delta);
 
+    void updateLastLogin();          
+    time_t getLastLogin() const;    
+
 
     string getName() const { return name; }
     string getEmail() const { return email; }
     string getBio() const { return biography; }
+
     void print() const override;
 };
 

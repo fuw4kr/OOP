@@ -39,7 +39,7 @@ map<int, int> GraphAlgorithms::dijkstra(int start) {
     }
     if (dist.count(start) == 0) return {};
     dist[start] = 0;
-    
+
     priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
     pq.push({ 0, start });
 
@@ -47,7 +47,7 @@ map<int, int> GraphAlgorithms::dijkstra(int start) {
         auto top = pq.top(); pq.pop();
         int d = top.first, u = top.second;
         if (d > dist[u]) continue;
-        
+
         for (int v : adjacencyList[u]) {
             if (dist[u] + 1 < dist[v]) {
                 dist[v] = dist[u] + 1;
@@ -112,9 +112,8 @@ vector<vector<int>> GraphAlgorithms::findTriangles() {
     return triangles;
 }
 
-    bool GraphAlgorithms::hasPath(int from, int to) {
-        if (!adjacencyList.count(from) || !adjacencyList.count(to)) return false;
-        auto dist = breadthFirstSearch(from);
-        return dist.count(to) > 0;
-    }
-
+bool GraphAlgorithms::hasPath(int from, int to) {
+    if (!adjacencyList.count(from) || !adjacencyList.count(to)) return false;
+    auto dist = breadthFirstSearch(from);
+    return dist.count(to) > 0;
+}

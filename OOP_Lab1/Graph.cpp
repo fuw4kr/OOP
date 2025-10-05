@@ -16,7 +16,7 @@ void Graph::addVertex(Vertex* v) {
 
 void Graph::addEdge(Edge* e) {
     if (!e) return;
-    edges.push_back(e);          
+    edges.push_back(e);
 }
 
 void Graph::removeVertex(int id) {

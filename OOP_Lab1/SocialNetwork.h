@@ -34,7 +34,9 @@ public:
     map<int, int> shortestPathsFrom(int startId);
     map<int, double> userCentrality();
     vector<vector<int>> detectFriendGroups();
-
+    
+    void generateRandomUsers(int n); 
+   
     void printNetwork() const;
 };
 

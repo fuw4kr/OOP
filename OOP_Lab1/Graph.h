@@ -48,5 +48,6 @@ public:
 
     virtual void print() const;
 };
+
 #endif // GRAPH_H
  
