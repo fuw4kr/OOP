@@ -1,6 +1,8 @@
 ﻿#include "Menu.h"
+#include "Graph.h"
 #include <iostream>
 #include <ctime>
+#include <fstream>
 using namespace std;
 
 void runMenu(SocialNetwork& net) {
@@ -11,7 +13,8 @@ void runMenu(SocialNetwork& net) {
             << "\n11. Update location\n12. Add follower\n13. Add following\n14. Change reputation\n15. Find common friends"
             << "\n16. Find close friends\n17. Find common subscriptions\n18. Find users nearby (same location)"
             << "\n19. Recommend users you may know\n20. Show most central users\n21. Check friendship cycles"
-            << "\n22. Update last login time\n23. Generate random users"
+            << "\n22. Update last login time\n23. Generate random users.\n24. Export graph to DOT format"
+            << "\n25. Save social network info to text file\n"
             << "\n0. Exit\nChoice: ";
 
         cin >> choice;
@@ -239,6 +242,32 @@ void runMenu(SocialNetwork& net) {
             net.printNetwork();
             break;
         }
+
+        case 24: {
+            string fname;
+            cout << "Enter filename or full path to save DOT file (e.g. network.dot): ";
+            cin >> fname;
+
+            if (fname.find(".dot") == string::npos) {
+                fname += ".dot";
+            }
+
+            net.exportToDot(fname);
+            cout << "Attempted saving graph to " << fname << std::endl;
+            break;
         }
-    } while (choice != 0);
+
+        case 25: {
+            string fname;
+            cout << "Enter filename for saving info (e.g. network_info.txt): ";
+            cin >> fname;
+            if (fname.find(".txt") == string::npos) {
+                fname += ".txt";
+            }
+            net.saveToTextFile(fname);
+            break;
+        }
+        }
+    }
+    while (choice != 0);
 }

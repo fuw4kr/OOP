@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <string>
 using namespace std;
 
 class Vertex {
@@ -45,9 +46,11 @@ public:
     virtual vector<int> getNeighbors(int id) const;
     virtual vector<Vertex*> getAllVertices() const;
     virtual vector<Edge*> getAllEdges() const;
-
+    
     virtual void print() const;
+    
+    virtual void exportToDot(const string& filename) const;
+
 };
 
 #endif // GRAPH_H
- 

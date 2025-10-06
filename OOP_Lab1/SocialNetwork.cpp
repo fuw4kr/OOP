@@ -1,5 +1,6 @@
 #include "SocialNetwork.h"
 #include <iostream>
+#include <fstream>
 #include <set>
 #include <cstdlib>    
 #include <ctime>
@@ -109,6 +110,11 @@ vector<User*> SocialNetwork::findCommonSubscriptions(int userA, int userB) {
 }
 
 bool SocialNetwork::areConnected(int userA, int userB) {
+    vector<pair<int, int>> edgesList;
+    for (auto* e : getAllEdges()) {
+        edgesList.push_back({ e->getFrom(), e->getTo() });
+    }
+    buildGraph(edgesList);
     return GraphAlgorithms::hasPath(userA, userB);
 }
 
@@ -118,14 +124,29 @@ int SocialNetwork::distanceBetween(int userA, int userB) {
 }
 
 map<int, int> SocialNetwork::shortestPathsFrom(int startId) {
+    vector<pair<int, int>> edgesList;
+    for (auto* e : getAllEdges()) {
+        edgesList.push_back({ e->getFrom(), e->getTo() });
+    }
+    buildGraph(edgesList);
     return GraphAlgorithms::dijkstra(startId);
 }
 
 map<int, double> SocialNetwork::userCentrality() {
+    vector<pair<int, int>> edgesList;
+    for (auto* e : getAllEdges()) {
+        edgesList.push_back({ e->getFrom(), e->getTo() });
+    }
+    buildGraph(edgesList);
     return GraphAlgorithms::computeDegreeCentrality();
 }
 
 vector<vector<int>> SocialNetwork::detectFriendGroups() {
+    vector<pair<int, int>> edgesList;
+    for (auto* e : getAllEdges()) {
+        edgesList.push_back({ e->getFrom(), e->getTo() });
+    }
+    buildGraph(edgesList);
     return GraphAlgorithms::findTriangles();
 }
 
@@ -154,14 +175,60 @@ void SocialNetwork::generateRandomUsers(int n) {
     for (int i = 0; i < n * 1.5; ++i) {
         int u1 = rand() % n;
         int u2 = rand() % n;
-        if (u1 != u2)
-            addEdge(new Friendship(u1, u2));
+        int u3 = rand() % n;
+        int u4 = rand() % n;
+        int u5 = rand() % n;
+        int u6 = rand() % n;
+        if (u1 != u2) addEdge(new Friendship(u1, u2));
+        if (u3 != u4) addEdge(new Subscription(u3, u4));
+        addEdge(new Post(rand() % n, "post"));
+        if (u5 != u6) addEdge(new Message(u5, u6, "message"));
     }
-
     cout << "+ " << n << " random users created." << endl;
 }
 
-void SocialNetwork::printNetwork() const {
+void SocialNetwork::saveToTextFile(const string& filename) const {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << filename << " for writing.\n";
+        return;
+    }
+
+    file << "USERS\n";
+    for (auto* v : getAllVertices()) {
+        auto* u = dynamic_cast<User*>(v);
+        if (u) {
+            file << "User ID: " << u->getId()
+                << ", Name: " << u->getName()
+                << ", Email: " << u->getEmail()
+                << ", Bio: " << u->getBio()
+                << ", Location: " << u->getLocation()
+                << "\n";
+        }
+    }
+
+    file << "\nRELATIONSHIPS\n";
+    for (auto* e : getAllEdges()) {
+        if (auto* f = dynamic_cast<Friendship*>(e)) {
+            file << "Friendship: " << f->getFrom() << " <-> " << f->getTo() << "\n";
+        }
+        else if (auto* s = dynamic_cast<Subscription*>(e)) {
+            file << "Subscription: " << s->getFrom() << " -> " << s->getTo() << "\n";
+        }
+        else if (auto* m = dynamic_cast<Message*>(e)) {
+            file << "Message: " << m->getFrom() << " -> " << m->getTo()
+                << " : " << m->getText() << "\n";
+        }
+        else if (auto* p = dynamic_cast<Post*>(e)) {
+            file << "Post by User " << p->getFrom() << ": " << p->getContent() << "\n";
+        }
+    }
+
+    file.close();
+    cout << "Social network data saved to " << filename << endl;
+}
+
+    void SocialNetwork::printNetwork() const {
     cout << "USERS" << endl;
     for (auto* v : getAllVertices()) {
         v->print();

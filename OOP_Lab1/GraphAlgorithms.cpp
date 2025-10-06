@@ -19,12 +19,22 @@ void GraphAlgorithms::buildGraph(const vector<pair<int, int>>& edges) {
 
 map<int, int> GraphAlgorithms::breadthFirstSearch(int start) {
     map<int, int> dist;
+    if (!adjacencyList.count(start)) return dist;
+
     queue<int> q;
-    if (adjacencyList.count(start) == 0) {
-        if (adjacencyList.find(start) == adjacencyList.end()) {
-            return dist;
+    q.push(start);
+    dist[start] = 0;
+
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int v : adjacencyList[u]) {
+            if (!dist.count(v)) {
+                dist[v] = dist[u] + 1;
+                q.push(v);
+            }
         }
     }
+    return dist;
 }
 
 bool GraphAlgorithms::isConnected(int start, int totalVertices) {

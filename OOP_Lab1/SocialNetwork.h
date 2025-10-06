@@ -36,6 +36,8 @@ public:
     vector<vector<int>> detectFriendGroups();
     
     void generateRandomUsers(int n); 
+
+    void saveToTextFile(const string& filename) const;
    
     void printNetwork() const;
 };

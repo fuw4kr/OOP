@@ -1,7 +1,11 @@
 #include "Graph.h"
-#include "GraphAlgorithms.h"  
-#include <iostream>
+#include "GraphAlgorithms.h" 
+#include "User.h" 
 #include <vector>
+#include <fstream>
+#include <map>
+#include <string>
+#include <iostream>
 using namespace std;
 
 Graph::~Graph() {
@@ -75,4 +79,45 @@ void Graph::print() const {
     for (auto& p : vertices) p.second->print();
     cout << "Edges" << endl;
     for (auto* e : edges) e->print();
+}
+
+void Graph::exportToDot(const string& filename) const {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: Unable to open file " << filename << " for writing." << endl;
+        return;
+    }
+
+    file << "digraph G {\n";
+    file << "  rankdir=LR;\n";
+
+    for (const auto& p : vertices) {
+        int id = p.first;
+        file << "  " << id << " [label=\"User id " << id << "\"];\n";
+    }
+
+    for (auto* e : edges) {
+        if (dynamic_cast<const Friendship*>(e)) {
+            file << "  " << e->getFrom() << " -> " << e->getTo()
+                << " [color=blue, label=\"friend\"];\n";
+        }
+        else if (dynamic_cast<const Subscription*>(e)) {
+            file << "  " << e->getFrom() << " -> " << e->getTo()
+                << " [color=green, label=\"follow\"];\n";
+        }
+        else if (dynamic_cast<const Message*>(e)) {
+            file << "  " << e->getFrom() << " -> " << e->getTo()
+                << " [color=red, label=\"msg\"];\n";
+        }
+        else if (dynamic_cast<const Post*>(e)) {
+            file << "  " << e->getFrom() << " -> " << e->getTo()
+                << " [color=yellow, label=\"post\"];\n";
+        }
+        else {
+            file << "  " << e->getFrom() << " -> " << e->getTo() << ";\n";
+        }
+    }
+
+    file << "}\n";
+    file.close();
 }

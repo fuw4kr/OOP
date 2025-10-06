@@ -78,4 +78,3 @@ public:
 };
 
 #endif // USER_H
- 
