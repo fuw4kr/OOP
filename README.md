@@ -1,5 +1,4 @@
-# List 1: 7 
-# List 2: 11(social network)
+# List 1: 7  List 2: 11(social network)
 
 ## Description
 This project implements a **social network model** using **graph data structures** based on **adjacency lists**.  
