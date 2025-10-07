@@ -20,5 +20,6 @@ It provides functionality for managing users (vertices), relationships (edges), 
 -  **Error handling** and testing of invalid inputs
 -  **Unit tests** for verifying core functionality
 -  Saving and loading graph data to `.txt`
+-  **Logger** with writing to file `.log`
 
 Seven * were implemented.
