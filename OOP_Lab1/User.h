@@ -77,4 +77,5 @@ public:
     const string& getContent() const { return content; }
 };
 
-#endif // USER_H
+#endif 
+USER_H

@@ -1,4 +1,5 @@
-#include "SocialNetwork.h"
+﻿#include "SocialNetwork.h"
+#include "Logger.h"
 #include <iostream>
 #include <fstream>
 #include <set>
@@ -7,28 +8,46 @@
 using namespace std;
 
 void SocialNetwork::addUser(User* user) {
-    addVertex(user); 
+    if (!user) {
+        LOG_ERROR("Attempted to add null user");
+        return;
+    }
+    addVertex(user);
+    LOG_INFO("Added user ID=" + to_string(user->getId()) + " name=" + user->getName());
 }
 
 void SocialNetwork::removeUser(int userId) {
-    removeVertex(userId); 
+    LOG_INFO("Removing user ID=" + to_string(userId));
+    removeVertex(userId);
 }
 
 User* SocialNetwork::getUser(int userId) const {
-    return dynamic_cast<User*>(getVertex(userId));
+    auto* user = dynamic_cast<User*>(getVertex(userId));
+    if (user)
+        LOG_DEBUG("User found: ID=" + to_string(userId));
+    else
+        LOG_WARN("User not found: ID=" + to_string(userId));
+    return user;
 }
 
 void SocialNetwork::addFriendship(int userA, int userB) {
+    if (!getUser(userA) || !getUser(userB)) {
+        LOG_ERROR("Invalid friendship IDs: " + to_string(userA) + ", " + to_string(userB));
+        return;
+    }
     addEdge(new Friendship(userA, userB));
     addEdge(new Friendship(userB, userA));
+    LOG_INFO("Created friendship between " + to_string(userA) + " and " + to_string(userB));
 }
 
 void SocialNetwork::removeFriendship(int userA, int userB) {
+    LOG_INFO("Removing friendship between users " + to_string(userA) + " and " + to_string(userB));
     removeEdge(userA, userB);
     removeEdge(userB, userA);
 }
 
 void SocialNetwork::addSubscription(int followerId, int followeeId) {
+    LOG_INFO("Adding subscription: " + to_string(followerId) + " -> " + to_string(followeeId));
     addEdge(new Subscription(followerId, followeeId));
     User* f = getUser(followerId);
     User* fe = getUser(followeeId);
@@ -37,29 +56,36 @@ void SocialNetwork::addSubscription(int followerId, int followeeId) {
 }
 
 void SocialNetwork::sendMessage(int senderId, int receiverId, const string& text) {
+    if (!getUser(senderId) || !getUser(receiverId)) {
+        LOG_ERROR("Cannot send message — user not found");
+        return;
+    }
     addEdge(new Message(senderId, receiverId, text));
-    User* sender = getUser(senderId);
-    User* receiver = getUser(receiverId);
-    if (sender) sender->sendMessage();
-    if (receiver) receiver->receiveMessage();
+    LOG_INFO("Message: " + to_string(senderId) + " → " + to_string(receiverId) + " | " + text);
 }
 
 void SocialNetwork::addPost(int authorId, const string& content) {
+    if (!getUser(authorId)) {
+        LOG_ERROR("Cannot add post — user not found: " + to_string(authorId));
+        return;
+    }
     addEdge(new Post(authorId, content));
-    User* author = getUser(authorId);
-    if (author) author->addPost();
+    LOG_INFO("User " + to_string(authorId) + " posted: " + content);
 }
 
 vector<User*> SocialNetwork::getFriendsOfUser(int userId) {
+    LOG_DEBUG("Fetching friends of user ID=" + to_string(userId));
     vector<User*> friends;
     for (int friendId : getNeighbors(userId)) {
         if (auto* u = dynamic_cast<User*>(getVertex(friendId)))
             friends.push_back(u);
     }
+    LOG_DEBUG("User ID=" + to_string(userId) + " has " + to_string(friends.size()) + " friends");
     return friends;
 }
 
 vector<User*> SocialNetwork::findMutualFriends(int userA, int userB) {
+    LOG_INFO("Finding mutual friends between " + to_string(userA) + " and " + to_string(userB));
     auto friendsA = getFriendsOfUser(userA);
     auto friendsB = getFriendsOfUser(userB);
     vector<User*> mutual;
@@ -67,10 +93,12 @@ vector<User*> SocialNetwork::findMutualFriends(int userA, int userB) {
         for (auto* ub : friendsB)
             if (ua->getId() == ub->getId())
                 mutual.push_back(ua);
+    LOG_DEBUG("Mutual friends found: " + to_string(mutual.size()));
     return mutual;
 }
 
 vector<User*> SocialNetwork::findCloseFriends(int userId) {
+    LOG_INFO("Finding close friends for user ID=" + to_string(userId));
     set<int> closeSet;
     auto friends = getFriendsOfUser(userId);
     for (auto* f : friends) {
@@ -83,20 +111,24 @@ vector<User*> SocialNetwork::findCloseFriends(int userId) {
     for (int id : closeSet)
         if (auto* u = getUser(id))
             result.push_back(u);
+    LOG_DEBUG("Close friends found: " + to_string(result.size()));
     return result;
 }
 
 vector<User*> SocialNetwork::findUsersByLocation(const string& location) {
+    LOG_INFO("Searching users by location: " + location);
     vector<User*> result;
-    for (auto* v : getAllVertices()) { 
+    for (auto* v : getAllVertices()) {
         auto* u = dynamic_cast<User*>(v);
         if (u && u->getLocation() == location)
             result.push_back(u);
     }
+    LOG_DEBUG("Users found in " + location + ": " + to_string(result.size()));
     return result;
 }
 
 vector<User*> SocialNetwork::findCommonSubscriptions(int userA, int userB) {
+    LOG_INFO("Finding common subscriptions between " + to_string(userA) + " and " + to_string(userB));
     set<int> subsA, subsB;
     for (auto* e : getAllEdges()) {
         if (Subscription* s = dynamic_cast<Subscription*>(e)) {
@@ -105,52 +137,64 @@ vector<User*> SocialNetwork::findCommonSubscriptions(int userA, int userB) {
         }
     }
     vector<User*> res;
-    for (int id : subsA) if (subsB.count(id) && getUser(id)) res.push_back(getUser(id));
+    for (int id : subsA)
+        if (subsB.count(id) && getUser(id))
+            res.push_back(getUser(id));
+    LOG_DEBUG("Common subscriptions found: " + to_string(res.size()));
     return res;
 }
 
 bool SocialNetwork::areConnected(int userA, int userB) {
+    LOG_INFO("Checking if users " + to_string(userA) + " and " + to_string(userB) + " are connected");
     vector<pair<int, int>> edgesList;
-    for (auto* e : getAllEdges()) {
+    for (auto* e : getAllEdges())
         edgesList.push_back({ e->getFrom(), e->getTo() });
-    }
     buildGraph(edgesList);
-    return GraphAlgorithms::hasPath(userA, userB);
+    bool connected = GraphAlgorithms::hasPath(userA, userB);
+    LOG_DEBUG("Users " + to_string(userA) + " and " + to_string(userB) +
+        (connected ? " are connected" : " are NOT connected"));
+    return connected;
 }
 
 int SocialNetwork::distanceBetween(int userA, int userB) {
+    LOG_INFO("Calculating distance between " + to_string(userA) + " and " + to_string(userB));
     auto dist = GraphAlgorithms::breadthFirstSearch(userA);
-    return dist.count(userB) ? dist[userB] : -1;
+    int result = dist.count(userB) ? dist[userB] : -1;
+    LOG_DEBUG("Distance result: " + to_string(result));
+    return result;
 }
 
 map<int, int> SocialNetwork::shortestPathsFrom(int startId) {
+    LOG_INFO("Computing shortest paths from user ID=" + to_string(startId));
     vector<pair<int, int>> edgesList;
-    for (auto* e : getAllEdges()) {
+    for (auto* e : getAllEdges())
         edgesList.push_back({ e->getFrom(), e->getTo() });
-    }
     buildGraph(edgesList);
     return GraphAlgorithms::dijkstra(startId);
 }
 
 map<int, double> SocialNetwork::userCentrality() {
+    LOG_INFO("Computing user centrality for network");
     vector<pair<int, int>> edgesList;
-    for (auto* e : getAllEdges()) {
+    for (auto* e : getAllEdges())
         edgesList.push_back({ e->getFrom(), e->getTo() });
-    }
     buildGraph(edgesList);
     return GraphAlgorithms::computeDegreeCentrality();
 }
 
 vector<vector<int>> SocialNetwork::detectFriendGroups() {
+    LOG_INFO("Detecting friend groups (triangles)");
     vector<pair<int, int>> edgesList;
-    for (auto* e : getAllEdges()) {
+    for (auto* e : getAllEdges())
         edgesList.push_back({ e->getFrom(), e->getTo() });
-    }
     buildGraph(edgesList);
-    return GraphAlgorithms::findTriangles();
+    auto result = GraphAlgorithms::findTriangles();
+    LOG_DEBUG("Detected " + to_string(result.size()) + " friend groups");
+    return result;
 }
 
 void SocialNetwork::generateRandomUsers(int n) {
+    LOG_INFO("Generating " + to_string(n) + " random users");
     srand(static_cast<unsigned>(time(0)));
 
     vector<string> names = {
@@ -159,7 +203,7 @@ void SocialNetwork::generateRandomUsers(int n) {
     };
 
     vector<string> locations = {
-        "Kyiv", "Lviv", "Odesa", "Kharkiv", "Dnipro", "Vinnytsia", "Poltava"
+        "Kyiv", "Lviv", "Odesa", "Kharkiv", "Dnipro", "Vinnytsia", "Sumy"
     };
 
     for (int i = 0; i < n; ++i) {
@@ -184,13 +228,15 @@ void SocialNetwork::generateRandomUsers(int n) {
         addEdge(new Post(rand() % n, "post"));
         if (u5 != u6) addEdge(new Message(u5, u6, "message"));
     }
-    cout << "+ " << n << " random users created." << endl;
+
+    LOG_INFO(to_string(n) + " random users created successfully");
 }
 
 void SocialNetwork::saveToTextFile(const string& filename) const {
+    LOG_INFO("Saving social network data to file: " + filename);
     ofstream file(filename);
     if (!file.is_open()) {
-        cerr << "Error: Cannot open file " << filename << " for writing.\n";
+        LOG_ERROR("Cannot open file for writing: " + filename);
         return;
     }
 
@@ -225,10 +271,11 @@ void SocialNetwork::saveToTextFile(const string& filename) const {
     }
 
     file.close();
-    cout << "Social network data saved to " << filename << endl;
+    LOG_INFO("Social network data saved successfully to " + filename);
 }
 
-    void SocialNetwork::printNetwork() const {
+void SocialNetwork::printNetwork() const {
+    LOG_DEBUG("Printing entire social network");
     cout << "USERS" << endl;
     for (auto* v : getAllVertices()) {
         v->print();
