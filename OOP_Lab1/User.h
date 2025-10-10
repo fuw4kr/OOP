@@ -4,9 +4,10 @@
 #include "Graph.h"
 #include <string>
 #include <ctime>
+#include <vector>
 
 class User : public Vertex {
-private:
+protected:
     string name;
     string email;
     string biography;
@@ -14,40 +15,63 @@ private:
     string phone;
     string birthday;
     string gender;
-    time_t lastLogin;
-    int reputation; 
+
+public:
+    User(int id, const string& n, const string& e);
+
+    virtual void updateBio(const string& b);
+    void setBirthday(const string& bday);
+    void setPhone(const string& ph);
+    void setGender(const string& g);
+    void updateLocation(const string& loc);
+    
+    string getLocation() const { return location; }
+    string getName() const { return name; }
+    string getEmail() const { return email; }
+    string getBio() const { return biography; }
+
+    virtual void print() const;
+};
+
+class RegularUser : public User {
+protected:
+    int reputation;
     int followers;
     int following;
     int postsCount;
     int messagesSent;
     int messagesReceived;
+    time_t lastLogin;
+
 public:
-    User(int id, const string n, const string e);
+    RegularUser(int id, const string& n, const string& e);
 
-    void updateBio(const string& b);
-    void setBirthday(const string& bday);
-    void setPhone(const string& ph);
-    void setGender(const string& g);
-    void updateLocation(const string& loc);
-    string getLocation() const { return location; }
-    
-    void addFollower();
-    void addFollowing();
-    void addPost();
-    void sendMessage();
-    void receiveMessage();
-    void changeReputation(int delta);
+    virtual void addFollower();
+    virtual void addFollowing();
+    virtual void addPost();
+    virtual void sendMessage();
+    virtual void receiveMessage();
+    virtual void changeReputation(int delta);
 
-    void updateLastLogin();          
-    time_t getLastLogin() const;    
-
-
-    string getName() const { return name; }
-    string getEmail() const { return email; }
-    string getBio() const { return biography; }
+    void updateLastLogin();
+    time_t getLastLogin() const;
 
     void print() const override;
 };
+
+class PremiumUser : public RegularUser {
+    int premiumPoints;
+    vector<string> checkmark;
+public:
+    PremiumUser(int id, const string& n, const string& e, int points = 100);
+
+    void addCheckmark(const string& checkmark);
+    void spendPremiumPoints(int amount);
+    void bonusReputation();
+    
+    void print() const;
+};
+
 
 class Friendship : public Edge {
 public:
@@ -77,5 +101,4 @@ public:
     const string& getContent() const { return content; }
 };
 
-#endif 
-USER_H
+#endif // USER_H

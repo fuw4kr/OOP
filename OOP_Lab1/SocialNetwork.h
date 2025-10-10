@@ -35,11 +35,13 @@ public:
     map<int, double> userCentrality();
     vector<vector<int>> detectFriendGroups();
     
-    void generateRandomUsers(int n); 
+    static void generateRandomUsers(SocialNetwork& network, int n, bool withRelations = true);
 
     void saveToTextFile(const string& filename) const;
-   
+    void exportToDot(const string& filename) const;
+    
     void printNetwork() const;
+    void printStatistics();
 };
 
 #endif // SOCIALNETWORK_H

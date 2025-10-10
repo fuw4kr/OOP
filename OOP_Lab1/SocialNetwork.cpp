@@ -22,12 +22,17 @@ void SocialNetwork::removeUser(int userId) {
 }
 
 User* SocialNetwork::getUser(int userId) const {
-    auto* user = dynamic_cast<User*>(getVertex(userId));
-    if (user)
+    Vertex* v = getVertex(userId);
+    if (!v) {
+        LOG_WARN("User not found: ID=" + to_string(userId));
+        return nullptr;
+    }
+    User* u = dynamic_cast<User*>(v);
+    if (u)
         LOG_DEBUG("User found: ID=" + to_string(userId));
     else
-        LOG_WARN("User not found: ID=" + to_string(userId));
-    return user;
+        LOG_WARN("Vertex is not a User: ID=" + to_string(userId));
+    return u;
 }
 
 void SocialNetwork::addFriendship(int userA, int userB) {
@@ -49,10 +54,11 @@ void SocialNetwork::removeFriendship(int userA, int userB) {
 void SocialNetwork::addSubscription(int followerId, int followeeId) {
     LOG_INFO("Adding subscription: " + to_string(followerId) + " -> " + to_string(followeeId));
     addEdge(new Subscription(followerId, followeeId));
-    User* f = getUser(followerId);
-    User* fe = getUser(followeeId);
-    if (f) f->addFollowing();
-    if (fe) fe->addFollower();
+
+    if (auto* f = dynamic_cast<RegularUser*>(getUser(followerId)))
+        f->addFollowing();
+    if (auto* fe = dynamic_cast<RegularUser*>(getUser(followeeId)))
+        fe->addFollower();
 }
 
 void SocialNetwork::sendMessage(int senderId, int receiverId, const string& text) {
@@ -61,7 +67,13 @@ void SocialNetwork::sendMessage(int senderId, int receiverId, const string& text
         return;
     }
     addEdge(new Message(senderId, receiverId, text));
-    LOG_INFO("Message: " + to_string(senderId) + " → " + to_string(receiverId) + " | " + text);
+
+    if (auto* s = dynamic_cast<RegularUser*>(getUser(senderId)))
+        s->sendMessage();
+    if (auto* r = dynamic_cast<RegularUser*>(getUser(receiverId)))
+        r->receiveMessage();
+
+    LOG_INFO("Message: " + to_string(senderId) + " to " + to_string(receiverId) + " | " + text);
 }
 
 void SocialNetwork::addPost(int authorId, const string& content) {
@@ -70,14 +82,16 @@ void SocialNetwork::addPost(int authorId, const string& content) {
         return;
     }
     addEdge(new Post(authorId, content));
+    if (auto* u = dynamic_cast<RegularUser*>(getUser(authorId)))
+        u->addPost();
     LOG_INFO("User " + to_string(authorId) + " posted: " + content);
 }
 
 vector<User*> SocialNetwork::getFriendsOfUser(int userId) {
-    LOG_DEBUG("Fetching friends of user ID=" + to_string(userId));
+    LOG_DEBUG("Getting friends of user ID=" + to_string(userId));
     vector<User*> friends;
     for (int friendId : getNeighbors(userId)) {
-        if (auto* u = dynamic_cast<User*>(getVertex(friendId)))
+        if (auto* u = getUser(friendId))
             friends.push_back(u);
     }
     LOG_DEBUG("User ID=" + to_string(userId) + " has " + to_string(friends.size()) + " friends");
@@ -119,9 +133,10 @@ vector<User*> SocialNetwork::findUsersByLocation(const string& location) {
     LOG_INFO("Searching users by location: " + location);
     vector<User*> result;
     for (auto* v : getAllVertices()) {
-        auto* u = dynamic_cast<User*>(v);
-        if (u && u->getLocation() == location)
-            result.push_back(u);
+        if (auto* u = dynamic_cast<User*>(v)) {
+            if (u->getLocation() == location)
+                result.push_back(u);
+        }
     }
     LOG_DEBUG("Users found in " + location + ": " + to_string(result.size()));
     return result;
@@ -131,7 +146,7 @@ vector<User*> SocialNetwork::findCommonSubscriptions(int userA, int userB) {
     LOG_INFO("Finding common subscriptions between " + to_string(userA) + " and " + to_string(userB));
     set<int> subsA, subsB;
     for (auto* e : getAllEdges()) {
-        if (Subscription* s = dynamic_cast<Subscription*>(e)) {
+        if (auto* s = dynamic_cast<Subscription*>(e)) {
             if (s->getFrom() == userA) subsA.insert(s->getTo());
             if (s->getFrom() == userB) subsB.insert(s->getTo());
         }
@@ -193,7 +208,7 @@ vector<vector<int>> SocialNetwork::detectFriendGroups() {
     return result;
 }
 
-void SocialNetwork::generateRandomUsers(int n) {
+void SocialNetwork::generateRandomUsers(SocialNetwork& network, int n, bool withRelations) {
     LOG_INFO("Generating " + to_string(n) + " random users");
     srand(static_cast<unsigned>(time(0)));
 
@@ -213,20 +228,23 @@ void SocialNetwork::generateRandomUsers(int n) {
         u->updateLocation(locations[rand() % locations.size()]);
         u->setGender((rand() % 2 == 0) ? "Male" : "Female");
         u->setBirthday("199" + to_string(rand() % 10) + "-0" + to_string(rand() % 9 + 1) + "-1" + to_string(rand() % 9));
-        addVertex(u);
+        network.addVertex(u);
     }
 
-    for (int i = 0; i < n * 1.5; ++i) {
-        int u1 = rand() % n;
-        int u2 = rand() % n;
-        int u3 = rand() % n;
-        int u4 = rand() % n;
-        int u5 = rand() % n;
-        int u6 = rand() % n;
-        if (u1 != u2) addEdge(new Friendship(u1, u2));
-        if (u3 != u4) addEdge(new Subscription(u3, u4));
-        addEdge(new Post(rand() % n, "post"));
-        if (u5 != u6) addEdge(new Message(u5, u6, "message"));
+    if (withRelations) {
+        for (int i = 0; i < n * 1.5; ++i) {
+            int u1 = rand() % n;
+            int u2 = rand() % n;
+            int u3 = rand() % n;
+            int u4 = rand() % n;
+            int u5 = rand() % n;
+            int u6 = rand() % n;
+
+            if (u1 != u2) network.addEdge(new Friendship(u1, u2));
+            if (u3 != u4) network.addEdge(new Subscription(u3, u4));
+            network.addEdge(new Post(rand() % n, "post"));
+            if (u5 != u6) network.addEdge(new Message(u5, u6, "message"));
+        }
     }
 
     LOG_INFO(to_string(n) + " random users created successfully");
@@ -242,7 +260,7 @@ void SocialNetwork::saveToTextFile(const string& filename) const {
 
     file << "USERS\n";
     for (auto* v : getAllVertices()) {
-        auto* u = dynamic_cast<User*>(v);
+        auto* u = dynamic_cast<RegularUser*>(v);
         if (u) {
             file << "User ID: " << u->getId()
                 << ", Name: " << u->getName()
@@ -274,6 +292,11 @@ void SocialNetwork::saveToTextFile(const string& filename) const {
     LOG_INFO("Social network data saved successfully to " + filename);
 }
 
+void SocialNetwork::exportToDot(const string& filename) const {
+    LOG_INFO("Exporting graph to DOT file: " + filename);
+    exportToDotGraph(filename);
+}
+
 void SocialNetwork::printNetwork() const {
     LOG_DEBUG("Printing entire social network");
     cout << "USERS" << endl;
@@ -284,4 +307,41 @@ void SocialNetwork::printNetwork() const {
     for (auto* e : getAllEdges()) {
         e->print();
     }
+}
+
+void SocialNetwork::printStatistics() {
+    LOG_INFO("Collecting template-based network statistics");
+
+    cout << "\nNETWORK STATISTICS\n";
+
+    auto allUsers = getAllVertices();
+    auto allEdges = getAllEdges();
+
+    LOG_DEBUG("Counting users by type");
+    int regularCount = getVerticesOfType<RegularUser>().size();
+    int premiumCount = getVerticesOfType<PremiumUser>().size();
+
+    LOG_DEBUG("Counting edges by type");
+    int friendships = countType<Friendship>(allEdges);
+    int subs = countType<Subscription>(allEdges);
+    int messages = countType<Message>(allEdges);
+    int posts = countType<Post>(allEdges);
+
+    cout << "Users total: " << allUsers.size() << endl;
+    cout << "Regular users: " << regularCount << endl;
+    cout << "Premium users: " << premiumCount << endl;
+
+    cout << "\nConnections total: " << allEdges.size() << endl;
+    cout << "Friendships: " << friendships << endl;
+    cout << "Subscriptions: " << subs << endl;
+    cout << "Messages: " << messages << endl;
+    cout << "Posts: " << posts << endl;
+
+    LOG_DEBUG("Printing vertices using forEachVertex template");
+    forEachVertex([](Vertex* v) {
+        if (auto* u = dynamic_cast<User*>(v)) {
+            LOG_DEBUG("User: " + u->getName());
+        }
+        });
+    LOG_INFO("Network statistics completed successfully");
 }

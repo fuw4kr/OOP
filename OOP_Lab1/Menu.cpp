@@ -4,6 +4,7 @@
 #include <iostream>
 #include <ctime>
 #include <fstream>
+#include <string>
 using namespace std;
 
 void runMenu(SocialNetwork& net) {
@@ -14,8 +15,9 @@ void runMenu(SocialNetwork& net) {
             << "\n11. Update location\n12. Add follower\n13. Add following\n14. Change reputation\n15. Find common friends"
             << "\n16. Find close friends\n17. Find common subscriptions\n18. Find users nearby (same location)"
             << "\n19. Recommend users you may know\n20. Show most central users\n21. Check friendship cycles"
-            << "\n22. Update last login time\n23. Generate random users.\n24. Export graph to DOT format"
-            << "\n25. Save social network info to text file\n"
+            << "\n22. Update last login time\n23. Generate random users\n24. Export graph to DOT format"
+            << "\n25. Save social network info to text file\n26. View users by role\n27. View relationships by type"
+            << "\n28. Network overview(template walk)"
             << "\n0. Exit\nChoice: ";
 
         cin >> choice;
@@ -23,13 +25,20 @@ void runMenu(SocialNetwork& net) {
 
         switch (choice) {
         case 1: {
-            int id; string name, email;
             LOG_INFO("User selected: Add user");
+            int id; string name, email;
+            int type;
             cout << "ID: "; cin >> id; cin.ignore();
             cout << "Name: "; getline(cin, name);
             cout << "Email: "; getline(cin, email);
-            net.addUser(new User(id, name, email));
-            LOG_INFO("Added new user ID=" + to_string(id) + " (" + name + ")");
+            cout << "Select user type (1-Regular, 2-Premium): "; cin >> type;
+
+            if (type == 2)
+                net.addUser(new PremiumUser(id, name, email));
+            else
+                net.addUser(new RegularUser(id, name, email));
+
+            LOG_INFO("Added user ID=" + to_string(id) + " (" + name + ")");
             break;
         }
 
@@ -129,29 +138,37 @@ void runMenu(SocialNetwork& net) {
         }
 
         case 12: {
+            LOG_DEBUG("User selected: Add follower");
             int id; cout << "User ID: "; cin >> id;
-            User* u = net.getUser(id);
-            if (u) { u->addFollower(); LOG_DEBUG("Follower added for user ID=" + to_string(id)); }
-            else LOG_WARN("User not found while adding follower: ID=" + to_string(id));
+            if (auto* u = dynamic_cast<RegularUser*>(net.getUser(id))) {
+                u->addFollower();
+                LOG_DEBUG("Follower added for user ID=" + to_string(id));
+            }
+            else LOG_WARN("User not found or not RegularUser: ID=" + to_string(id));
             break;
         }
 
         case 13: {
+            LOG_DEBUG("User selected: Add following");
             int id; cout << "User ID: "; cin >> id;
-            User* u = net.getUser(id);
-            if (u) { u->addFollowing(); LOG_DEBUG("Following added for user ID=" + to_string(id)); }
-            else LOG_WARN("User not found while adding following: ID=" + to_string(id));
+            if (auto* u = dynamic_cast<RegularUser*>(net.getUser(id))) {
+                u->addFollowing();
+                LOG_DEBUG("Following added for user ID=" + to_string(id));
+            }
+            else LOG_WARN("User not found or not RegularUser: ID=" + to_string(id));
             break;
         }
 
         case 14: {
-            LOG_INFO("User selected: Change reputation");
+            LOG_DEBUG("User selected: Change reputation");
             int id, delta;
             cout << "User ID: "; cin >> id;
             cout << "Change reputation by: "; cin >> delta;
-            User* u = net.getUser(id);
-            if (u) { u->changeReputation(delta); LOG_INFO("Reputation changed by " + to_string(delta)); }
-            else LOG_WARN("User not found for reputation change: ID=" + to_string(id));
+            if (auto* u = dynamic_cast<RegularUser*>(net.getUser(id))) {
+                u->changeReputation(delta);
+                LOG_INFO("Reputation changed for user ID=" + to_string(id));
+            }
+            else LOG_WARN("User not found or not RegularUser: ID=" + to_string(id));
             break;
         }
 
@@ -238,7 +255,7 @@ void runMenu(SocialNetwork& net) {
             else {
                 cout << "User influence ranking\n";
                 for (auto it = cent.begin(); it != cent.end(); ++it) {
-                    cout << "User " << it->first << " → centrality score: " << it->second << endl;
+                    cout << "User " << it->first << "-> centrality score: " << it->second << endl;
                 }
                 LOG_DEBUG("Displayed user centrality scores");
             }
@@ -268,11 +285,9 @@ void runMenu(SocialNetwork& net) {
         }
 
         case 22: {
-            LOG_INFO("User selected: View last login time");
-            int id;
-            cout << "User ID: "; cin >> id;
-            User* user = net.getUser(id);
-            if (user) {
+            LOG_INFO("User selected: Update last login time");
+            int id; cout << "User ID: "; cin >> id;
+            if (auto* user = dynamic_cast<RegularUser*>(net.getUser(id))) {
                 char buffer[26];
                 time_t lastLogin = user->getLastLogin();
                 ctime_s(buffer, sizeof(buffer), &lastLogin);
@@ -280,7 +295,7 @@ void runMenu(SocialNetwork& net) {
                 LOG_DEBUG("Displayed last login for user ID=" + to_string(id));
             }
             else {
-                cout << "User not found.\n";
+                cout << "User not found or not RegularUser.\n";
                 LOG_WARN("Attempt to check last login for non-existent ID=" + to_string(id));
             }
             break;
@@ -289,9 +304,15 @@ void runMenu(SocialNetwork& net) {
         case 23: {
             LOG_INFO("User selected: Generate random users");
             int count;
+            string includeRelations;
             cout << "How many random users generate? ";
             cin >> count;
-            net.generateRandomUsers(count);
+
+            cout << "Generate friendships, messages, etc.? (yes/no): ";
+            cin >> includeRelations;
+            bool withRelations = (includeRelations == "yes" || includeRelations == "Yes");
+
+            SocialNetwork::generateRandomUsers(net, count, withRelations);
             net.printNetwork();
             LOG_DEBUG("Generated " + to_string(count) + " random users");
             break;
@@ -327,6 +348,86 @@ void runMenu(SocialNetwork& net) {
             break;
         }
 
+        case 26: {
+            LOG_INFO("User selected: View users by role");
+            cout << "\n---Select user type---\n1. Regular users\n2. Premium users\nChoice: ";
+            int t; cin >> t;
+
+            if (t == 1) {
+                auto regulars = net.getVerticesOfType<RegularUser>();
+                cout << "\nRegular users (" << regulars.size() << "):\n";
+                for (auto* u : regulars) u->print();
+                LOG_DEBUG("Displayed all RegularUser profiles");
+            }
+            else if (t == 2) {
+                auto premiums = net.getVerticesOfType<PremiumUser>();
+                cout << "\nPremium users (" << premiums.size() << "):\n";
+                for (auto* u : premiums) u->print();
+                LOG_DEBUG("Displayed all PremiumUser profiles");
+            }
+            else {
+                cout << "Invalid choice.\n";
+                LOG_WARN("Invalid user type selection");
+            }
+            break;
+        }
+
+        case 27: {
+            LOG_INFO("User selected: View relationships by type");
+            cout << "\n--- Select relationship type ---\n1. Friendships\n2. Subscriptions\n3. Messages\n4. Posts\nChoice: ";
+            int t; cin >> t;
+
+            switch (t) {
+            case 1: {
+                auto f = net.getEdgesOfType<Friendship>();
+                cout << "\nFriendships (" << f.size() << "):\n";
+                for (auto* e : f) e->print();
+                LOG_DEBUG("Displayed friendship edges");
+                break;
+            }
+            case 2: {
+                auto s = net.getEdgesOfType<Subscription>();
+                cout << "\nSubscriptions (" << s.size() << "):\n";
+                for (auto* e : s) e->print();
+                LOG_DEBUG("Displayed subscription edges");
+                break;
+            }
+            case 3: {
+                auto m = net.getEdgesOfType<Message>();
+                cout << "\nMessages (" << m.size() << "):\n";
+                for (auto* e : m) e->print();
+                LOG_DEBUG("Displayed message edges");
+                break;
+            }
+            case 4: {
+                auto p = net.getEdgesOfType<Post>();
+                cout << "\nPosts (" << p.size() << "):\n";
+                for (auto* e : p) e->print();
+                LOG_DEBUG("Displayed post edges");
+                break;
+            }
+            default:
+                cout << "Invalid choice.\n";
+                LOG_WARN("Invalid relationship type selection");
+                break;
+            }
+            break;
+        }
+
+        case 28: {
+            LOG_INFO("User selected: Explore entire social graph");
+            cout << "\n--- Exploring all users (forEachVertex) ---\n";
+            net.forEachVertex([](Vertex* v) {
+                if (auto* u = dynamic_cast<User*>(v))
+                    cout << "User " << u->getId() << ": " << u->getName() << endl;
+                });
+            cout << "\n--- Exploring all relationships (forEachEdge) ---\n";
+            net.forEachEdge([](Edge* e) {
+                e->print();
+                });
+            LOG_DEBUG("Social graph exploration completed");
+            break;
+        }
         default:
             if (choice != 0)
                 LOG_WARN("Unknown menu choice: " + to_string(choice));

@@ -42,7 +42,7 @@ void Graph::removeVertex(int id) {
             }
             return false;
             });
-        int removedEdges = edges.end() - it;
+        auto removedEdges = edges.end() - it;;
         edges.erase(it, edges.end());
 
         delete vertices[id];
@@ -114,7 +114,7 @@ void Graph::print() const {
     for (auto* e : edges) e->print();
 }
 
-void Graph::exportToDot(const string& filename) const {
+void Graph::exportToDotGraph(const string& filename) const {
     LOG_INFO("Exporting graph to DOT file: " + filename);
     ofstream file(filename);
     if (!file.is_open()) {

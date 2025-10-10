@@ -2,18 +2,22 @@
 #include "Logger.h"
 #include <cassert>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 void test_AddUserSuccessfully() {
     LOG_INFO("Running test: test_AddUserSuccessfully");
 
     SocialNetwork net;
-    User* u1 = new User(1, "Alice", "alice@mail.com");
+    RegularUser* u1 = new RegularUser(1, "Alice", "alice@mail.com");
     net.addUser(u1);
     LOG_DEBUG("User Alice added with ID=1");
 
-    User* found = net.getUser(1);
-    assert(found != nullptr && "User should be added successfully");
+    User* foundBase = net.getUser(1);
+    assert(foundBase != nullptr && "User should be added successfully");
+    
+    RegularUser* found = dynamic_cast<RegularUser*>(foundBase);
+    assert(found != nullptr && "Found user should be RegularUser");
     assert(found->getName() == "Alice" && "User name should match");
 
     LOG_INFO("test_AddUserSuccessfully passed");
@@ -97,7 +101,7 @@ void test_AddSubscriptionAndMessage() {
     LOG_DEBUG("Alice subscribed to Bob");
 
     net.sendMessage(1, 2, "Hello!");
-    LOG_DEBUG("Message sent from 1 → 2");
+    LOG_DEBUG("Message sent from 1 to 2");
 
     assert(true && "Subscription and message sending executed without crash");
     LOG_INFO("test_AddSubscriptionAndMessage passed");
